@@ -3,12 +3,12 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlinx.binaryCompatibilityValidator)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
@@ -25,6 +25,10 @@ if (publishingPropertiesFile.exists()) {
 
 kotlin {
     explicitApi()
+    @OptIn(ExperimentalAbiValidation::class)
+    abiValidation {
+        enabled = true
+    }
 
     jvm {
         compilerOptions.jvmTarget = JvmTarget.JVM_1_8
@@ -143,6 +147,13 @@ mavenPublishing {
 tasks.register("detektAll") {
     group = "verification"
     dependsOn(tasks.withType<Detekt>())
+}
+
+tasks.check {
+    dependsOn(
+        // TODO: https://youtrack.jetbrains.com/issue/KT-78525
+        tasks.checkLegacyAbi,
+    )
 }
 
 fun getProperty(propertyName: String): String? =
